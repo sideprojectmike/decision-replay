@@ -84,6 +84,102 @@ class TestAgreement(unittest.TestCase):
         self.assertEqual(r["unmatched"]["only_in_decisions_by_question"], {"q": 1, "other": 1})
 
 
+def cases(rows):
+    """Cases from (confidence, agree) or (confidence, agree, model_ok) tuples; 3-tuples carry truth."""
+    return [{"conf": r[0], "agree": r[1], "has_truth": len(r) > 2, "model_ok": len(r) > 2 and r[2],
+             "llm_ok": len(r) > 2} for r in rows]
+
+
+class TestWilson(unittest.TestCase):
+    def test_hand_computed_values(self):
+        # 30/30: bound is n / (n + z^2) = 30 / 33.8415 = 0.88649
+        self.assertAlmostEqual(replay.wilson_lower(30, 30), 0.88649, places=4)
+        # 45/50: (0.9 + 0.0384146 - 1.959964 * sqrt(0.0018 + 0.00038415)) / 1.0768292 = 0.78640
+        self.assertAlmostEqual(replay.wilson_lower(45, 50), 0.78640, places=4)
+
+    def test_edges(self):
+        self.assertEqual(replay.wilson_lower(0, 0), 0.0)
+        self.assertEqual(replay.wilson_lower(0, 20), 0.0)
+
+
+class TestThreshold(unittest.TestCase):
+    # With target 0.80: 20/20 has bound 20/23.84 = 0.839 (passes), 20/21 has 0.773 (fails).
+
+    def test_lowest_passing_threshold(self):
+        # 20 agreeing cases at 0.9; below them only disagreements, so 0.9 is the answer.
+        c = replay.calibrate(cases([(0.9, True)] * 20 + [(0.5, False)] * 20), 0.80, 10)
+        self.assertEqual(c["status"], "ok")
+        self.assertEqual(c["basis"], "llm_answer")
+        self.assertEqual(c["threshold"]["threshold"], 0.9)
+        self.assertEqual(c["threshold"]["n"], 20)
+        self.assertEqual(c["threshold"]["coverage"], 0.5)
+        self.assertEqual(c["threshold"]["agreement"], 1.0)
+
+    def test_goes_lower_while_the_bound_holds(self):
+        # 40 agreeing cases spread over 0.7..0.9, then junk at 0.3: lowest passing t is 0.7.
+        rows = [(0.9, True)] * 20 + [(0.8, True)] * 10 + [(0.7, True)] * 10 + [(0.3, False)] * 10
+        c = replay.calibrate(cases(rows), 0.80, 10)
+        self.assertEqual(c["threshold"]["threshold"], 0.7)
+        self.assertEqual(c["threshold"]["coverage"], 0.8)
+        self.assertEqual([s["threshold"] for s in c["sweep"]], [0.3, 0.7, 0.8, 0.9])
+        self.assertEqual([s["n"] for s in c["sweep"]], [50, 40, 30, 20])
+
+    def test_ties_at_the_threshold_are_all_included(self):
+        # 19 agree at 0.9; at 0.8 one agrees and one disagrees. t=0.8 must take both tied
+        # cases (20/21 = 0.773, fails), not just the agreeing one (20/20 would pass).
+        rows = [(0.9, True)] * 19 + [(0.8, True), (0.8, False)]
+        c = replay.calibrate(cases(rows), 0.80, 10)
+        self.assertEqual(c["sweep"][0], {"threshold": 0.8, "n": 21, "coverage": 1.0,
+                                         "agreement": 20 / 21,
+                                         "wilson_lower": replay.wilson_lower(20, 21)})
+        self.assertEqual(c["threshold"]["threshold"], 0.9)  # 19/19 has bound 0.832
+        # Requiring 20 cases rules out 0.9, and the tie rules out 0.8.
+        c = replay.calibrate(cases(rows), 0.80, 20)
+        self.assertEqual(c["status"], "no_threshold")
+        self.assertIsNone(c["threshold"])
+
+    def test_no_threshold_meets_the_bar(self):
+        # 100 cases, half disagree at every confidence level: plenty of data, never good enough.
+        rows = [(conf, ok) for conf in (0.6, 0.7, 0.8, 0.9) for ok in (True, False)] * 13
+        c = replay.calibrate(cases(rows), 0.95, 30)
+        self.assertEqual(c["status"], "no_threshold")
+        self.assertIsNone(c["threshold"])
+
+    def test_not_enough_data(self):
+        # 29 perfect cases < min_n; and 40 perfect cases cannot reach 0.95 (needs 73).
+        self.assertEqual(replay.calibrate(cases([(0.9, True)] * 29), 0.80, 30)["status"], "not_enough_data")
+        c = replay.calibrate(cases([(0.9, True)] * 40), 0.95, 30)
+        self.assertEqual((c["status"], c["n_needed"]), ("not_enough_data", 73))
+        self.assertEqual(replay.calibrate([], 0.95, 30)["status"], "not_enough_data")
+
+    def test_identical_confidences_and_perfect_agreement(self):
+        c = replay.calibrate(cases([(0.5, True)] * 80), 0.95, 30)
+        self.assertEqual(len(c["sweep"]), 1)
+        self.assertEqual(c["threshold"]["threshold"], 0.5)
+        self.assertEqual(c["threshold"]["coverage"], 1.0)
+        self.assertEqual(c["threshold"]["agreement"], 1.0)
+
+    def test_truth_based_calibration(self):
+        # The model disagrees with the LLM everywhere, but is right against truth at 0.9.
+        rows = [(0.9, False, True)] * 20 + [(0.4, True, False)] * 20
+        c = replay.calibrate(cases(rows), 0.80, 10)
+        self.assertEqual(c["basis"], "truth")
+        self.assertEqual(c["threshold"]["threshold"], 0.9)
+
+    def test_too_few_truth_labels_falls_back_to_llm_answer(self):
+        rows = [(0.9, True, False)] * 5 + [(0.9, True)] * 20
+        c = replay.calibrate(cases(rows), 0.80, 10)
+        self.assertEqual(c["basis"], "llm_answer")
+        self.assertEqual(c["threshold"]["n"], 25)
+
+    def test_coverage_counts_unlabelled_cases_too(self):
+        # 20 labelled cases at 0.9, 20 unlabelled at 0.95 and 40 unlabelled at 0.1.
+        rows = [(0.9, True, True)] * 20 + [(0.95, True)] * 20 + [(0.1, True)] * 40
+        c = replay.calibrate(cases(rows), 0.80, 10)
+        self.assertEqual(c["threshold"]["n"], 20)
+        self.assertEqual(c["threshold"]["coverage"], 0.5)
+
+
 class TestValidation(FileCase):
     def assert_error(self, decisions, predictions, *expected):
         code, out, err = run_main([decisions, predictions])
@@ -139,7 +235,41 @@ class TestEndToEnd(FileCase):
         self.assertIn("== risky ==", out)
         self.assertIn("OVERALL", out)
         self.assertIn("1 only in decisions, 1 only in predictions", out)
+        self.assertIn("not enough data", out)
         self.assertIn("warning", err)
+
+    def test_threshold_report_and_json_sweep(self):
+        d = self.write("d.jsonl", [dec(str(i), "a") for i in range(40)])
+        p = self.write("p.jsonl", [pred(str(i), "a" if i < 20 else "b", 0.9 if i < 20 else 0.5)
+                                   for i in range(40)])
+        out_path = os.path.join(self.dir, "out.json")
+        code, out, err = run_main([d, p, "--target", "0.8", "--min-n", "10", "--json", out_path])
+        self.assertEqual((code, err), (0, ""))
+        self.assertIn("threshold             0.9 ", out)
+        self.assertIn("50.0% of cases at or above", out)
+        with open(out_path) as f:
+            data = json.load(f)
+        self.assertEqual(data["target"], 0.8)
+        sweep = data["groups"]["q"]["calibration"]["sweep"]
+        self.assertEqual([(s["threshold"], s["n"]) for s in sweep], [(0.5, 40), (0.9, 20)])
+        self.assertEqual(set(sweep[0]), {"threshold", "n", "coverage", "agreement", "wilson_lower"})
+
+    def test_keep_using_the_llm_message(self):
+        d = self.write("d.jsonl", [dec(str(i), "a") for i in range(100)])
+        p = self.write("p.jsonl", [pred(str(i), "a" if i % 2 else "b") for i in range(100)])
+        code, out, _ = run_main([d, p])
+        self.assertEqual(code, 0)
+        self.assertIn("keep using the LLM for this decision", out)
+
+    def test_bad_options_exit_2(self):
+        d, p = self.write("d.jsonl", []), self.write("p.jsonl", [])
+        for extra in (["--target", "1.5"], ["--min-n", "0"]):
+            with self.assertRaises(SystemExit) as cm, contextlib.redirect_stderr(io.StringIO()):
+                replay.main([d, p] + extra)
+            self.assertEqual(cm.exception.code, 2)
+        code, _, err = run_main([d, p, "--json", os.path.join(self.dir, "no", "dir.json")])
+        self.assertEqual(code, 2)
+        self.assertIn("cannot write", err)
 
     def test_empty_files(self):
         code, out, err = run_main([self.write("d.jsonl", []), self.write("p.jsonl", [])])
