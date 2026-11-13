@@ -1,0 +1,64 @@
+{"id": "syn-route-00", "question": "model_route", "llm_answer": "large", "llm_latency_ms": 700, "llm_cost_usd": 0.0021, "synthetic": true}
+{"id": "syn-route-01", "question": "model_route", "llm_answer": "small", "llm_latency_ms": 737, "llm_cost_usd": 0.0023, "synthetic": true}
+{"id": "syn-route-02", "question": "model_route", "llm_answer": "small", "llm_latency_ms": 774, "llm_cost_usd": 0.0025, "synthetic": true}
+{"id": "syn-route-03", "question": "model_route", "llm_answer": "large", "llm_latency_ms": 811, "llm_cost_usd": 0.0027, "synthetic": true}
+{"id": "syn-route-04", "question": "model_route", "llm_answer": "small", "llm_latency_ms": 848, "llm_cost_usd": 0.0029, "synthetic": true}
+{"id": "syn-route-05", "question": "model_route", "llm_answer": "small", "llm_latency_ms": 885, "llm_cost_usd": 0.0021, "synthetic": true}
+{"id": "syn-route-06", "question": "model_route", "llm_answer": "large", "llm_latency_ms": 922, "llm_cost_usd": 0.0023, "synthetic": true}
+{"id": "syn-route-07", "question": "model_route", "llm_answer": "small", "llm_latency_ms": 959, "llm_cost_usd": 0.0025, "synthetic": true}
+{"id": "syn-route-08", "question": "model_route", "llm_answer": "small", "llm_latency_ms": 996, "llm_cost_usd": 0.0027, "synthetic": true}
+{"id": "syn-route-09", "question": "model_route", "llm_answer": "large", "llm_latency_ms": 1033, "llm_cost_usd": 0.0029, "synthetic": true}
+{"id": "syn-route-10", "question": "model_route", "llm_answer": "small", "llm_latency_ms": 1070, "llm_cost_usd": 0.0021, "synthetic": true}
+{"id": "syn-route-11", "question": "model_route", "llm_answer": "small", "llm_latency_ms": 707, "llm_cost_usd": 0.0023, "synthetic": true}
+{"id": "syn-route-12", "question": "model_route", "llm_answer": "large", "llm_latency_ms": 744, "llm_cost_usd": 0.0025, "synthetic": true}
+{"id": "syn-route-13", "question": "model_route", "llm_answer": "small", "llm_latency_ms": 781, "llm_cost_usd": 0.0027, "synthetic": true}
+{"id": "syn-route-14", "question": "model_route", "llm_answer": "small", "llm_latency_ms": 818, "llm_cost_usd": 0.0029, "synthetic": true}
+{"id": "syn-route-15", "question": "model_route", "llm_answer": "large", "llm_latency_ms": 855, "llm_cost_usd": 0.0021, "synthetic": true}
+{"id": "syn-route-16", "question": "model_route", "llm_answer": "small", "llm_latency_ms": 892, "llm_cost_usd": 0.0023, "synthetic": true}
+{"id": "syn-route-17", "question": "model_route", "llm_answer": "small", "llm_latency_ms": 929, "llm_cost_usd": 0.0025, "synthetic": true}
+{"id": "syn-route-18", "question": "model_route", "llm_answer": "large", "llm_latency_ms": 966, "llm_cost_usd": 0.0027, "synthetic": true}
+{"id": "syn-route-19", "question": "model_route", "llm_answer": "small", "llm_latency_ms": 1003, "llm_cost_usd": 0.0029, "synthetic": true}
+{"id": "syn-route-20", "question": "model_route", "llm_answer": "small", "llm_latency_ms": 1040, "llm_cost_usd": 0.0021, "synthetic": true}
+{"id": "syn-route-21", "question": "model_route", "llm_answer": "large", "llm_latency_ms": 1077, "llm_cost_usd": 0.0023, "synthetic": true}
+{"id": "syn-route-22", "question": "model_route", "llm_answer": "small", "llm_latency_ms": 714, "llm_cost_usd": 0.0025, "synthetic": true}
+{"id": "syn-route-23", "question": "model_route", "llm_answer": "small", "llm_latency_ms": 751, "llm_cost_usd": 0.0027, "synthetic": true}
+{"id": "syn-route-24", "question": "model_route", "llm_answer": "large", "llm_latency_ms": 788, "llm_cost_usd": 0.0029, "synthetic": true}
+{"id": "syn-route-25", "question": "model_route", "llm_answer": "small", "llm_latency_ms": 825, "llm_cost_usd": 0.0021, "synthetic": true}
+{"id": "syn-route-26", "question": "model_route", "llm_answer": "small", "llm_latency_ms": 862, "llm_cost_usd": 0.0023, "synthetic": true}
+{"id": "syn-route-27", "question": "model_route", "llm_answer": "large", "llm_latency_ms": 899, "llm_cost_usd": 0.0025, "synthetic": true}
+{"id": "syn-route-28", "question": "model_route", "llm_answer": "small", "llm_latency_ms": 936, "llm_cost_usd": 0.0027, "synthetic": true}
+{"id": "syn-route-29", "question": "model_route", "llm_answer": "small", "llm_latency_ms": 973, "llm_cost_usd": 0.0029, "synthetic": true}
+{"id": "syn-route-30", "question": "model_route", "llm_answer": "large", "llm_latency_ms": 1010, "llm_cost_usd": 0.0021, "synthetic": true}
+{"id": "syn-route-31", "question": "model_route", "llm_answer": "small", "llm_latency_ms": 1047, "llm_cost_usd": 0.0023, "synthetic": true}
+{"id": "syn-route-32", "question": "model_route", "llm_answer": "small", "llm_latency_ms": 1084, "llm_cost_usd": 0.0025, "synthetic": true}
+{"id": "syn-route-33", "question": "model_route", "llm_answer": "large", "llm_latency_ms": 721, "llm_cost_usd": 0.0027, "synthetic": true}
+{"id": "syn-route-34", "question": "model_route", "llm_answer": "small", "llm_latency_ms": 758, "llm_cost_usd": 0.0029, "synthetic": true}
+{"id": "syn-route-35", "question": "model_route", "llm_answer": "small", "llm_latency_ms": 795, "llm_cost_usd": 0.0021, "synthetic": true}
+{"id": "syn-route-36", "question": "model_route", "llm_answer": "large", "llm_latency_ms": 832, "llm_cost_usd": 0.0023, "synthetic": true}
+{"id": "syn-route-37", "question": "model_route", "llm_answer": "small", "llm_latency_ms": 869, "llm_cost_usd": 0.0025, "synthetic": true}
+{"id": "syn-route-38", "question": "model_route", "llm_answer": "small", "llm_latency_ms": 906, "llm_cost_usd": 0.0027, "synthetic": true}
+{"id": "syn-route-39", "question": "model_route", "llm_answer": "large", "llm_latency_ms": 943, "llm_cost_usd": 0.0029, "synthetic": true}
+{"id": "syn-risky-00", "question": "is_risky", "llm_answer": true, "truth": true, "llm_latency_ms": 500, "llm_cost_usd": 0.0012, "synthetic": true}
+{"id": "syn-risky-01", "question": "is_risky", "llm_answer": false, "truth": false, "llm_latency_ms": 553, "llm_cost_usd": 0.0012, "synthetic": true}
+{"id": "syn-risky-02", "question": "is_risky", "llm_answer": false, "truth": false, "llm_latency_ms": 606, "llm_cost_usd": 0.0012, "synthetic": true}
+{"id": "syn-risky-03", "question": "is_risky", "llm_answer": false, "truth": false, "llm_latency_ms": 659, "llm_cost_usd": 0.0012, "synthetic": true}
+{"id": "syn-risky-04", "question": "is_risky", "llm_answer": true, "truth": true, "llm_latency_ms": 712, "llm_cost_usd": 0.0012, "synthetic": true}
+{"id": "syn-risky-05", "question": "is_risky", "llm_answer": true, "truth": false, "llm_latency_ms": 765, "llm_cost_usd": 0.0012, "synthetic": true}
+{"id": "syn-risky-06", "question": "is_risky", "llm_answer": false, "truth": false, "llm_latency_ms": 518, "llm_cost_usd": 0.0012, "synthetic": true}
+{"id": "syn-risky-07", "question": "is_risky", "llm_answer": false, "truth": false, "llm_latency_ms": 571, "llm_cost_usd": 0.0012, "synthetic": true}
+{"id": "syn-risky-08", "question": "is_risky", "llm_answer": true, "truth": true, "llm_latency_ms": 624, "llm_cost_usd": 0.0012, "synthetic": true}
+{"id": "syn-risky-09", "question": "is_risky", "llm_answer": false, "truth": false, "llm_latency_ms": 677, "llm_cost_usd": 0.0012, "synthetic": true}
+{"id": "syn-risky-10", "question": "is_risky", "llm_answer": false, "truth": false, "llm_latency_ms": 730, "llm_cost_usd": 0.0012, "synthetic": true}
+{"id": "syn-risky-11", "question": "is_risky", "llm_answer": false, "truth": false, "llm_latency_ms": 783, "llm_cost_usd": 0.0012, "synthetic": true}
+{"id": "syn-risky-12", "question": "is_risky", "llm_answer": true, "truth": true, "llm_latency_ms": 536, "llm_cost_usd": 0.0012, "synthetic": true}
+{"id": "syn-risky-13", "question": "is_risky", "llm_answer": false, "truth": false, "llm_latency_ms": 589, "llm_cost_usd": 0.0012, "synthetic": true}
+{"id": "syn-risky-14", "question": "is_risky", "llm_answer": false, "truth": false, "llm_latency_ms": 642, "llm_cost_usd": 0.0012, "synthetic": true}
+{"id": "syn-risky-15", "question": "is_risky", "llm_answer": false, "truth": false, "llm_latency_ms": 695, "llm_cost_usd": 0.0012, "synthetic": true}
+{"id": "syn-risky-16", "question": "is_risky", "llm_answer": true, "truth": true, "llm_latency_ms": 748, "llm_cost_usd": 0.0012, "synthetic": true}
+{"id": "syn-risky-17", "question": "is_risky", "llm_answer": true, "truth": false, "llm_latency_ms": 501, "llm_cost_usd": 0.0012, "synthetic": true}
+{"id": "syn-risky-18", "question": "is_risky", "llm_answer": false, "truth": false, "llm_latency_ms": 554, "llm_cost_usd": 0.0012, "synthetic": true}
+{"id": "syn-risky-19", "question": "is_risky", "llm_answer": false, "truth": false, "llm_latency_ms": 607, "llm_cost_usd": 0.0012, "synthetic": true}
+{"id": "syn-risky-20", "question": "is_risky", "llm_answer": true, "truth": true, "llm_latency_ms": 660, "llm_cost_usd": 0.0012, "synthetic": true}
+{"id": "syn-risky-21", "question": "is_risky", "llm_answer": false, "truth": false, "llm_latency_ms": 713, "llm_cost_usd": 0.0012, "synthetic": true}
+{"id": "syn-risky-22", "question": "is_risky", "llm_answer": false, "truth": false, "llm_latency_ms": 766, "llm_cost_usd": 0.0012, "synthetic": true}
+{"id": "syn-risky-23", "question": "is_risky", "llm_answer": false, "truth": false, "llm_latency_ms": 519, "llm_cost_usd": 0.0012, "synthetic": true}

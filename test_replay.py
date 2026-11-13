@@ -1,8 +1,11 @@
 import contextlib
+import importlib.util
 import io
 import json
 import os
+import sys
 import tempfile
+import types
 import unittest
 
 import replay
@@ -180,6 +183,38 @@ class TestThreshold(unittest.TestCase):
         self.assertEqual(c["threshold"]["coverage"], 0.5)
 
 
+class TestSavings(unittest.TestCase):
+    CASES = [  # two confident cases skip the LLM; the two below 0.8 pay for both
+        {"conf": 0.9, "llm_latency_ms": 1000, "latency_ms": 50, "llm_cost_usd": 0.01, "cost_usd": 0.001},
+        {"conf": 0.8, "llm_latency_ms": 1000, "latency_ms": 50, "llm_cost_usd": 0.01, "cost_usd": 0.001},
+        {"conf": 0.7, "llm_latency_ms": 1000, "latency_ms": 50, "llm_cost_usd": 0.01, "cost_usd": 0.001},
+        {"conf": 0.1, "llm_latency_ms": 2000, "latency_ms": 50, "llm_cost_usd": 0.02, "cost_usd": None},
+    ]
+
+    def test_latency_by_hand(self):
+        # before = (1000 * 3 + 2000) / 4 = 1250; after = (50 + 50 + 1050 + 2050) / 4 = 800
+        s = replay.savings(self.CASES, 0.8, "llm_latency_ms", "latency_ms")
+        self.assertEqual((s["n"], s["before"], s["after"]), (4, 1250, 800))
+        self.assertAlmostEqual(s["change_pct"], -36.0)
+
+    def test_cost_by_hand_skips_cases_missing_a_field(self):
+        # three cases have both fields: before = 0.01; after = (0.001 + 0.001 + 0.011) / 3
+        s = replay.savings(self.CASES, 0.8, "llm_cost_usd", "cost_usd")
+        self.assertEqual(s["n"], 3)
+        self.assertAlmostEqual(s["before"], 0.01)
+        self.assertAlmostEqual(s["after"], 0.013 / 3)
+        self.assertAlmostEqual(s["change_pct"], -56.6666667)
+
+    def test_slower_when_nothing_is_confident(self):
+        s = replay.savings(self.CASES, 0.95, "llm_latency_ms", "latency_ms")
+        self.assertEqual((s["before"], s["after"]), (1250, 1300))
+        self.assertAlmostEqual(s["change_pct"], 4.0)
+
+    def test_missing_fields(self):
+        rows = [{"conf": 0.9, "llm_latency_ms": 5, "latency_ms": None}]
+        self.assertIsNone(replay.savings(rows, 0.5, "llm_latency_ms", "latency_ms"))
+
+
 class TestValidation(FileCase):
     def assert_error(self, decisions, predictions, *expected):
         code, out, err = run_main([decisions, predictions])
@@ -254,6 +289,15 @@ class TestEndToEnd(FileCase):
         self.assertEqual([(s["threshold"], s["n"]) for s in sweep], [(0.5, 40), (0.9, 20)])
         self.assertEqual(set(sweep[0]), {"threshold", "n", "coverage", "agreement", "wilson_lower"})
 
+    def test_savings_in_report(self):
+        d = self.write("d.jsonl", [dec(str(i), "a", llm_latency_ms=1000) for i in range(40)])
+        p = self.write("p.jsonl", [pred(str(i), "a" if i < 20 else "b", 0.9 if i < 20 else 0.5,
+                                        latency_ms=100) for i in range(40)])
+        code, out, _ = run_main([d, p, "--target", "0.8", "--min-n", "10"])
+        self.assertEqual(code, 0)
+        self.assertIn("1000.0 ms -> 600.0 ms (-40.0%)", out)  # half the cases still pay 1000
+        self.assertIn("cost per decision     not available (no latency/cost fields)", out)
+
     def test_keep_using_the_llm_message(self):
         d = self.write("d.jsonl", [dec(str(i), "a") for i in range(100)])
         p = self.write("p.jsonl", [pred(str(i), "a" if i % 2 else "b") for i in range(100)])
@@ -276,6 +320,56 @@ class TestEndToEnd(FileCase):
         self.assertEqual(code, 0)
         self.assertIn("No matched cases", out)
         self.assertEqual(err, "")
+
+
+class TestExamples(unittest.TestCase):
+    def test_example_files_run_clean(self):
+        here = os.path.dirname(os.path.abspath(__file__))
+        code, out, err = run_main([os.path.join(here, "examples", "decisions.jsonl"),
+                                   os.path.join(here, "examples", "predictions.jsonl"),
+                                   "--target", "0.85"])
+        self.assertEqual((code, err), (0, ""))
+        self.assertIn("== model_route ==", out)
+        self.assertIn("== is_risky ==", out)
+
+
+class TestLayaAdapter(FileCase):
+    """Runs the adapter against a FAKE laya module shaped like Laya's documented output.
+    This checks the adapter's own plumbing only; the real library has never been run here."""
+
+    def test_writes_predictions_from_documented_result_shape(self):
+        calls = []
+
+        class FakeAgent:
+            def predict(self, state, questions):
+                calls.append((state, questions))
+                (name, q), = questions.items()
+                first = next(iter(q["criteria"]))
+                return {"answers": {name: {"choice": first, "answer_confidence": 0.91,
+                                           "probabilities": {first: 0.91}}}}
+
+        fake = types.ModuleType("laya")
+        fake.load = lambda repo: FakeAgent()
+        sys.modules["laya"] = fake
+        self.addCleanup(sys.modules.pop, "laya")
+        here = os.path.dirname(os.path.abspath(__file__))
+        spec = importlib.util.spec_from_file_location(
+            "laya_predict", os.path.join(here, "adapters", "laya_predict.py"))
+        adapter = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(adapter)
+
+        src = self.write("in.jsonl", [
+            {"id": "1", "state": "billed twice", "question": "Which team?", "options": ["billing", "tech"]},
+            {"id": "2", "state": "app crashes", "question": "Which team?",
+             "options": {"tech": "bugs and outages", "billing": "invoices"}}])
+        dst = os.path.join(self.dir, "predictions.jsonl")
+        self.assertEqual(adapter.main([src, dst]), 0)
+        self.assertEqual(calls[0][1]["decision"], {"type": "choice", "instructions": "Which team?",
+                                                   "criteria": {"billing": "billing", "tech": "tech"}})
+        rows = replay.load_predictions(dst)  # the output must be valid input for replay.py
+        self.assertEqual((rows["1"]["answer"], rows["1"]["confidence"]), ("billing", 0.91))
+        self.assertEqual(rows["2"]["answer"], "tech")
+        self.assertIn("latency_ms", rows["1"])
 
 
 if __name__ == "__main__":

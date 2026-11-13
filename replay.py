@@ -156,10 +156,24 @@ def calibrate(cases, target, min_n):
             "threshold": pick, "sweep": sweep}
 
 
+def savings(cases, t, llm_key, model_key):
+    """Average per-decision latency or cost: LLM only, versus the decision model first with
+    the LLM also asked when confidence < t. Uses only cases that have both fields."""
+    rows = [c for c in cases if c[llm_key] is not None and c[model_key] is not None]
+    if not rows:
+        return None
+    before = sum(c[llm_key] for c in rows) / len(rows)
+    after = sum(c[model_key] + (c[llm_key] if c["conf"] < t else 0) for c in rows) / len(rows)
+    return {"n": len(rows), "before": before, "after": after,
+            "change_pct": 100 * (after - before) / before if before else None}
+
+
 def analyse(cases, target, min_n):
     n = len(cases)
     agree = sum(c["agree"] for c in cases)
     labelled = [c for c in cases if c["has_truth"]]
+    calibration = calibrate(cases, target, min_n)
+    t = calibration["threshold"]
     return {
         "n": n,
         "agree_count": agree,
@@ -167,7 +181,11 @@ def analyse(cases, target, min_n):
         "n_truth": len(labelled),
         "llm_accuracy": rate(sum(c["llm_ok"] for c in labelled), len(labelled)),
         "model_accuracy": rate(sum(c["model_ok"] for c in labelled), len(labelled)),
-        "calibration": calibrate(cases, target, min_n),
+        "calibration": calibration,
+        "savings": t and {
+            "latency_ms": savings(cases, t["threshold"], "llm_latency_ms", "latency_ms"),
+            "cost_usd": savings(cases, t["threshold"], "llm_cost_usd", "cost_usd"),
+        },
     }
 
 
@@ -194,6 +212,14 @@ def pct(x):
     return "n/a" if x is None else f"{100 * x:.1f}%"
 
 
+def savings_text(s, n, fmt):
+    if s is None:
+        return "not available (no latency/cost fields)"
+    change = "" if s["change_pct"] is None else f" ({s['change_pct']:+.1f}%)"
+    partial = "" if s["n"] == n else f" [on the {s['n']} of {n} cases with both fields]"
+    return f"{fmt(s['before'])} -> {fmt(s['after'])}{change}{partial}"
+
+
 def group_lines(r, target):
     """(label, value) rows for one group."""
     rows = [("matched cases", str(r["n"])),
@@ -209,7 +235,11 @@ def group_lines(r, target):
         rows += [("threshold", f"{t['threshold']:g} (Wilson 95% lower bound {pct(t['wilson_lower'])} "
                   f">= target {pct(target)})"),
                  ("coverage", f"{pct(t['coverage'])} of cases at or above the threshold"),
-                 ("agreement above it", f"{pct(t['agreement'])} ({round(t['agreement'] * t['n'])}/{t['n']})")]
+                 ("agreement above it", f"{pct(t['agreement'])} ({round(t['agreement'] * t['n'])}/{t['n']})"),
+                 ("latency per decision", savings_text(r["savings"]["latency_ms"], r["n"],
+                                                       lambda v: f"{v:.1f} ms")),
+                 ("cost per decision", savings_text(r["savings"]["cost_usd"], r["n"],
+                                                    lambda v: f"${v:.5f}"))]
     elif c["status"] == "not_enough_data":
         rows.append(("threshold", f"not enough data ({c['n_calibration']} cases; a {pct(target)} target "
                      f"needs at least {c['n_needed']})"))
